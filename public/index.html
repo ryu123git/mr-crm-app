@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MR活動記録 — AI採点付き</title>
+<style>
+:root{
+  --blue:#1a6fc4;--blue-lt:#e8f1fb;--blue-dk:#0d4a8a;
+  --green:#1a8a5a;--green-lt:#e6f5ee;
+  --amber:#c47a00;--amber-lt:#fff4e0;
+  --red:#c42b2b;--red-lt:#fdeaea;
+  --purple:#6b4fcc;--purple-lt:#f0ecfb;
+  --gray-0:#ffffff;--gray-1:#f7f8fa;--gray-2:#eef0f3;--gray-3:#dde0e6;
+  --gray-4:#b0b7c3;--gray-5:#717a8c;--gray-6:#3c4252;--gray-7:#1a1d26;
+  --radius:8px;--shadow:0 1px 4px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--gray-1);color:var(--gray-7);font-size:14px;line-height:1.6;min-height:100vh}
+.app-header{position:sticky;top:0;z-index:100;background:var(--gray-0);border-bottom:1px solid var(--gray-3);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;box-shadow:var(--shadow)}
+.app-header-left{display:flex;align-items:center;gap:10px}
+.app-logo{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.app-title{font-size:16px;font-weight:600;color:var(--gray-7)}
+.app-date{font-size:12px;color:var(--gray-5);margin-top:1px}
+.app-header-right{display:flex;gap:8px;align-items:center}
+.btn-draft{padding:7px 14px;border:1px solid var(--gray-3);background:var(--gray-0);color:var(--gray-6);border-radius:var(--radius);font-size:13px;cursor:pointer;transition:background .15s}
+.btn-draft:hover{background:var(--gray-1)}
+.btn-ai{padding:7px 16px;border:none;background:var(--purple);color:#fff;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .15s}
+.btn-ai:hover{background:#5438aa}
+.btn-ai:disabled{background:var(--gray-4);cursor:not-allowed}
+.btn-submit{padding:7px 18px;border:none;background:var(--blue);color:#fff;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-submit:hover{background:var(--blue-dk)}
+.page{max-width:800px;margin:0 auto;padding:20px 16px 100px}
+.card{background:var(--gray-0);border-radius:12px;border:1px solid var(--gray-3);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--gray-1);border-bottom:1px solid var(--gray-3)}
+.card-head-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.card-head-icon.blue{background:var(--blue-lt);color:var(--blue)}
+.card-head-icon.green{background:var(--green-lt);color:var(--green)}
+.card-head-icon.amber{background:var(--amber-lt);color:var(--amber)}
+.card-head-icon.purple{background:var(--purple-lt);color:var(--purple)}
+.card-head-icon.red{background:var(--red-lt);color:var(--red)}
+.card-head-title{font-size:13px;font-weight:600;color:var(--gray-6);letter-spacing:.02em}
+.badge-ai{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--purple-lt);color:var(--purple);border:1px solid #d0c5f8;letter-spacing:.03em}
+.card-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;font-weight:600;color:var(--gray-5);text-transform:uppercase;letter-spacing:.06em}
+.field input,.field select{height:38px;padding:0 10px;border:1px solid var(--gray-3);border-radius:var(--radius);background:var(--gray-0);color:var(--gray-7);font-size:14px;font-family:inherit;transition:border-color .15s,box-shadow .15s;appearance:none;-webkit-appearance:none;width:100%}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23717a8c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.field input:focus,.field select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,.12)}
+.voice-wrap{display:flex;gap:6px;align-items:flex-start}
+.voice-wrap textarea{flex:1;padding:9px 10px;border:1px solid var(--gray-3);border-radius:var(--radius);background:var(--gray-0);color:var(--gray-7);font-size:14px;font-family:inherit;line-height:1.55;resize:none;transition:border-color .15s,box-shadow .15s}
+.voice-wrap textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,.12)}
+.mic-btn{flex-shrink:0;width:38px;height:38px;border-radius:var(--radius);border:1px solid var(--blue);background:var(--blue-lt);color:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .15s;position:relative;top:1px}
+.mic-btn:hover{background:var(--blue);color:#fff}
+.mic-btn.recording{background:var(--red);border-color:var(--red);color:#fff;animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.65}}
+.voice-hint{font-size:11px;color:var(--gray-4)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:13px;padding:5px 12px;border-radius:20px;border:1px solid var(--gray-3);background:var(--gray-0);color:var(--gray-6);cursor:pointer;transition:all .15s;user-select:none}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.on{background:var(--blue-lt);border-color:var(--blue);color:var(--blue);font-weight:600}
+.intent-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.intent-cell{display:flex;flex-direction:column;align-items:center;padding:8px 4px 6px;border-radius:var(--radius);border:1px solid var(--gray-3);background:var(--gray-1);cursor:pointer;transition:all .15s}
+.intent-cell:hover{border-color:var(--gray-4)}
+.intent-cell .num{font-size:18px;font-weight:700;color:var(--gray-5)}
+.intent-cell .lbl{font-size:10px;color:var(--gray-5);margin-top:2px}
+.intent-cell.active-1{background:#fff0e0;border-color:#c47a00}.intent-cell.active-1 .num,.intent-cell.active-1 .lbl{color:#7a4a00}
+.intent-cell.active-2{background:#fffbe0;border-color:#b09000}.intent-cell.active-2 .num,.intent-cell.active-2 .lbl{color:#5a4800}
+.intent-cell.active-3{background:#e8f5ee;border-color:#1a8a5a}.intent-cell.active-3 .num,.intent-cell.active-3 .lbl{color:#0d5a38}
+.intent-cell.active-4{background:#e8f1fb;border-color:#1a6fc4}.intent-cell.active-4 .num,.intent-cell.active-4 .lbl{color:#0d4a8a}
+.intent-cell.active-5{background:#f0ecfb;border-color:#6b4fcc}.intent-cell.active-5 .num,.intent-cell.active-5 .lbl{color:#3d2588}
+.star-row{display:flex;gap:6px;align-items:center}
+.star{font-size:26px;color:var(--gray-3);cursor:pointer;transition:color .12s;line-height:1}
+.star.lit{color:#e8a000}
+.prev-label{font-size:12px;color:var(--gray-5);margin-bottom:6px}
+.divider{height:1px;background:var(--gray-2);margin:4px 0}
+/* AI PANEL */
+.ai-panel{background:var(--gray-0);border-radius:12px;border:2px solid var(--purple);box-shadow:0 2px 16px rgba(107,79,204,.15);margin-bottom:14px;overflow:hidden;display:none}
+.ai-panel.show{display:block}
+.ai-panel-head{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--purple-lt);border-bottom:1px solid #d0c5f8}
+.ai-panel-title{font-size:14px;font-weight:700;color:var(--purple)}
+.ai-panel-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+.ai-loading{display:none;flex-direction:column;align-items:center;gap:12px;padding:36px 16px;text-align:center}
+.ai-loading.show{display:flex}
+.ai-spinner{width:44px;height:44px;border:3px solid var(--purple-lt);border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-loading-msg{font-size:13px;color:var(--gray-5)}
+.ai-score-main{display:flex;align-items:center;gap:16px;padding:16px;background:var(--purple-lt);border-radius:10px;border:1px solid #d0c5f8}
+.ai-score-circle{width:76px;height:76px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;border:3px solid var(--purple);background:#fff}
+.score-num{font-size:28px;font-weight:800;color:var(--purple);line-height:1}
+.score-denom{font-size:11px;color:var(--gray-5)}
+.ai-score-right{flex:1}
+.ai-score-label{font-size:11px;color:var(--gray-5);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.ai-score-summary{font-size:14px;color:var(--gray-7);margin-top:4px;line-height:1.55}
+.ai-rank-badge{display:inline-block;margin-top:6px;font-size:12px;font-weight:700;padding:3px 12px;border-radius:20px;color:#fff}
+.rank-S{background:#6b4fcc}.rank-A{background:#1a6fc4}.rank-B{background:#1a8a5a}.rank-C{background:#c47a00}.rank-D{background:#c42b2b}
+.ai-score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ai-score-item{background:var(--gray-1);border-radius:8px;border:1px solid var(--gray-3);padding:10px 12px}
+.ai-item-label{font-size:11px;color:var(--gray-5);font-weight:600;margin-bottom:5px}
+.ai-bar-wrap{height:7px;background:var(--gray-3);border-radius:4px;overflow:hidden;margin-bottom:5px}
+.ai-bar{height:100%;border-radius:4px;transition:width .9s ease;width:0%}
+.bar-purple{background:var(--purple)}.bar-blue{background:var(--blue)}.bar-green{background:var(--green)}.bar-amber{background:var(--amber)}.bar-red{background:var(--red)}
+.ai-item-nums{display:flex;justify-content:space-between;align-items:baseline}
+.ai-item-val{font-size:17px;font-weight:700;color:var(--gray-7)}
+.ai-item-max{font-size:11px;color:var(--gray-5)}
+.ai-feedback{border-radius:8px;border:1px solid var(--gray-3);overflow:hidden}
+.ai-feedback-head{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--gray-1);border-bottom:1px solid var(--gray-3);font-size:12px;font-weight:700;color:var(--gray-6)}
+.ai-feedback-body{padding:10px 12px;font-size:13px;color:var(--gray-7);line-height:1.7;white-space:pre-line}
+.ai-tag-list{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px}
+.ai-tag{font-size:12px;padding:3px 10px;border-radius:20px;border:1px solid var(--gray-3);background:var(--gray-1);color:var(--gray-6)}
+.ai-tag.pos{background:var(--green-lt);border-color:#9FE1CB;color:#0d5a38}
+.ai-tag.warn{background:var(--amber-lt);border-color:#FAC775;color:#5a3a00}
+.autosave-bar{position:fixed;bottom:0;left:0;right:0;background:var(--gray-0);border-top:1px solid var(--gray-3);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--gray-5);z-index:100;box-shadow:0 -2px 8px rgba(0,0,0,.06)}
+.autosave-status{display:flex;align-items:center;gap:6px}
+.autosave-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.bar-actions{display:flex;gap:8px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--gray-0);border-radius:16px;padding:28px 32px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.modal-icon{font-size:40px;margin-bottom:12px}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--gray-5);margin-bottom:20px;line-height:1.6}
+.modal-btns{display:flex;gap:8px;justify-content:center}
+.modal-close{padding:8px 20px;border:1px solid var(--gray-3);background:var(--gray-0);border-radius:var(--radius);font-size:14px;cursor:pointer}
+.modal-ok{padding:8px 24px;border:none;background:var(--blue);color:#fff;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer}
+@media(max-width:560px){
+  .row-2{grid-template-columns:1fr}
+  .row-3{grid-template-columns:1fr 1fr}
+  .ai-score-grid{grid-template-columns:1fr}
+  .app-title{font-size:14px}
+  .btn-draft{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-left">
+    <div class="app-logo">📋</div>
+    <div>
+      <div class="app-title">MR活動記録 <span style="font-size:11px;background:var(--purple-lt);color:var(--purple);padding:1px 7px;border-radius:20px;font-weight:600;margin-left:4px">AI採点</span></div>
+      <div class="app-date" id="today-date"></div>
+    </div>
+  </div>
+  <div class="app-header-right">
+    <button class="btn-draft" onclick="saveDraft()">下書き保存</button>
+    <button class="btn-ai" id="btn-ai-top" onclick="runAiScore()" disabled>✦ AI採点する</button>
+    <button class="btn-submit" onclick="submitForm()">送信して完了 →</button>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- 1. 基本情報 -->
+  <div class="card">
+    <div class="card-head"><div class="card-head-icon blue">🏥</div><div class="card-head-title">基本情報</div></div>
+    <div class="card-body">
+      <div class="row-2">
+        <div class="field"><label>医療機関名</label><input type="text" id="hospital" placeholder="例：○○病院"></div>
+        <div class="field"><label>面談医師</label><input type="text" id="doctor" placeholder="例：山田 太郎 先生"></div>
+      </div>
+      <div class="row-3">
+        <div class="field"><label>面談日時</label><input type="datetime-local" id="visit-dt"></div>
+        <div class="field"><label>面談時間（分）</label><input type="number" id="duration" placeholder="10" min="1" max="120"></div>
+        <div class="field"><label>面談形式</label>
+          <select id="channel">
+            <option value="">選択してください</option>
+            <option>対面</option><option>オンライン（Web会議）</option><option>電話</option><option>メール</option><option>eディテーリング</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 面談内容 -->
+  <div class="card">
+    <div class="card-head"><div class="card-head-icon blue">🎙️</div><div class="card-head-title">面談内容</div><div class="badge-ai">✦ AI自動スコアリング対象</div></div>
+    <div class="card-body">
+      <div class="field">
+        <label>医師の関心・反応</label>
+        <div class="voice-wrap"><textarea id="txt-interest" rows="2" placeholder="例：〇〇疾患の新ガイドラインに関心。患者への適応基準を質問された"></textarea><button class="mic-btn" onclick="startVoice('txt-interest',this)" title="音声入力">🎤</button></div>
+        <div class="voice-hint">🎤 マイクボタンを押して話すと自動入力されます</div>
+      </div>
+      <div class="divider"></div>
+      <div class="field"><label>医師からの質問・懸念事項</label><div class="voice-wrap"><textarea id="txt-concern" rows="2" placeholder="例：他剤との相互作用について懸念あり。副作用プロファイルを確認したい"></textarea><button class="mic-btn" onclick="startVoice('txt-concern',this)" title="音声入力">🎤</button></div></div>
+      <div class="divider"></div>
+      <div class="field"><label>競合品の言及</label><div class="voice-wrap"><textarea id="txt-competitor" rows="2" placeholder="例：△△社の新薬を検討中とのコメントあり。価格面での比較を要求された"></textarea><button class="mic-btn" onclick="startVoice('txt-competitor',this)" title="音声入力">🎤</button></div></div>
+      <div class="divider"></div>
+      <div class="field"><label>市場・患者情報</label><div class="voice-wrap"><textarea id="txt-market" rows="2" placeholder="例：最近、□□患者が増えている。近隣の□□病院でも処方が増えているとのこと"></textarea><button class="mic-btn" onclick="startVoice('txt-market',this)" title="音声入力">🎤</button></div></div>
+    </div>
+  </div>
+
+  <!-- 3. 処方意向スコア -->
+  <div class="card">
+    <div class="card-head"><div class="card-head-icon green">📊</div><div class="card-head-title">処方意向スコア</div></div>
+    <div class="card-body">
+      <div style="font-size:12px;color:var(--gray-5);margin-bottom:4px">面談後の処方意向を1〜5で選択してください</div>
+      <div class="intent-grid" id="intent-grid">
+        <div class="intent-cell" onclick="selectIntent(1)"><div class="num">1</div><div class="lbl">懐疑的</div></div>
+        <div class="intent-cell" onclick="selectIntent(2)"><div class="num">2</div><div class="lbl">様子見</div></div>
+        <div class="intent-cell" onclick="selectIntent(3)"><div class="num">3</div><div class="lbl">中　立</div></div>
+        <div class="intent-cell" onclick="selectIntent(4)"><div class="num">4</div><div class="lbl">前向き</div></div>
+        <div class="intent-cell" onclick="selectIntent(5)"><div class="num">5</div><div class="lbl">積極的</div></div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="prev-label">前回比</div>
+        <div class="chips" id="chips-compare">
+          <div class="chip" onclick="toggleChipSingle(this,'chips-compare')">→ 変化なし</div>
+          <div class="chip" onclick="toggleChipSingle(this,'chips-compare')">↑ 改善</div>
+          <div class="chip" onclick="toggleChipSingle(this,'chips-compare')">↓ 低下</div>
+          <div class="chip" onclick="toggleChipSingle(this,'chips-compare')">初回面談</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. チャネル連携 -->
+  <div class="card">
+    <div class="card-head"><div class="card-head-icon purple">🔗</div><div class="card-head-title">本社施策・チャネル連携</div></div>
+    <div class="card-body">
+      <div>
+        <div class="prev-label" style="margin-bottom:6px">連携済みの施策（複数選択可）</div>
+        <div class="chips" id="chips-channel">
+          <div class="chip" onclick="toggleChip(this)">MR君配信済み</div>
+          <div class="chip" onclick="toggleChip(this)">eディテーリング閲覧確認</div>
+          <div class="chip" onclick="toggleChip(this)">Web講演会案内</div>
+          <div class="chip" onclick="toggleChip(this)">メール開封確認</div>
+          <div class="chip" onclick="toggleChip(this)">メール未開封フォロー</div>
+          <div class="chip" onclick="toggleChip(this)">資料送付済み</div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:4px"><label>本社施策への医師の反応</label><div class="voice-wrap"><textarea id="txt-channel" rows="2" placeholder="例：MR君の動画コンテンツを視聴済みで、追加情報を求めていた"></textarea><button class="mic-btn" onclick="startVoice('txt-channel',this)" title="音声入力">🎤</button></div></div>
+    </div>
+  </div>
+
+  <!-- 5. 次アクション -->
+  <div class="card">
+    <div class="card-head"><div class="card-head-icon amber">➡️</div><div class="card-head-title">次アクション</div></div>
+    <div class="card-body">
+      <div class="field"><label>次回訪問の目的</label><div class="voice-wrap"><textarea id="txt-next" rows="2" placeholder="例：副作用データの追加資料を持参。処方拡大の意向を確認する"></textarea><button class="mic-btn" onclick="startVoice('txt-next',this)" title="音声入力">🎤</button></div></div>
+      <div class="row-3">
+        <div class="field"><label>次回訪問予定日</label><input type="date" id="next-date"></div>
+        <div class="field"><label>優先度</label><select id="priority"><option value="">選択</option><option>高</option><option>中</option><option>低</option></select></div>
+        <div class="field"><label>フォロー方法</label><select id="followup-method"><option value="">選択</option><option>対面訪問</option><option>オンライン</option><option>電話</option><option>メール</option></select></div>
+      </div>
+      <div class="field"><label>提供予定の資料・情報</label><div class="voice-wrap"><textarea id="txt-materials" rows="2" placeholder="例：Phase III試験データ、副作用比較表、患者向けパンフレット"></textarea><button class="mic-btn" onclick="startVoice('txt-materials',this)" title="音声入力">🎤</button></div></div>
+    </div>
+  </div>
+
+  <!-- 6. 自己評価 -->
+  <div class="card">
+    <div class="card-head"><div class="card-head-icon red">⭐</div><div class="card-head-title">自己評価・振り返り</div></div>
+    <div class="card-body">
+      <div>
+        <div class="prev-label" style="margin-bottom:8px">今回の面談の質（自己評価）</div>
+        <div class="star-row" id="star-row">
+          <span class="star" onclick="rateStar(1)">★</span><span class="star" onclick="rateStar(2)">★</span><span class="star" onclick="rateStar(3)">★</span><span class="star" onclick="rateStar(4)">★</span><span class="star" onclick="rateStar(5)">★</span>
+          <span id="star-label" style="font-size:12px;color:var(--gray-5);margin-left:8px"></span>
+        </div>
+      </div>
+      <div class="field"><label>うまくいった点</label><div class="voice-wrap"><textarea id="txt-good" rows="2" placeholder="例：医師のニーズに沿ったエビデンスを提示でき、処方意向が高まった"></textarea><button class="mic-btn" onclick="startVoice('txt-good',this)" title="音声入力">🎤</button></div></div>
+      <div class="field"><label>改善点・次回への気づき</label><div class="voice-wrap"><textarea id="txt-improve" rows="2" placeholder="例：患者プロファイルをより具体的に提示すべきだった"></textarea><button class="mic-btn" onclick="startVoice('txt-improve',this)" title="音声入力">🎤</button></div></div>
+      <div class="field"><label>本社へのフィードバック・要望</label><div class="voice-wrap"><textarea id="txt-feedback" rows="2" placeholder="例：〇〇疾患の最新ガイドライン対応資料が不足。追加コンテンツの作成を要望"></textarea><button class="mic-btn" onclick="startVoice('txt-feedback',this)" title="音声入力">🎤</button></div></div>
+    </div>
+  </div>
+
+  <!-- AI SCORE PANEL -->
+  <div class="ai-panel" id="ai-panel">
+    <div class="ai-panel-head">
+      <span style="font-size:18px">✦</span>
+      <div class="ai-panel-title">AI 面談品質スコアリング結果</div>
+      <span id="ai-timestamp" style="margin-left:auto;font-size:11px;color:var(--purple);opacity:.7"></span>
+    </div>
+    <div class="ai-loading" id="ai-loading"><div class="ai-spinner"></div><div class="ai-loading-msg" id="ai-loading-msg">活動報告を分析中...</div></div>
+    <div class="ai-panel-body" id="ai-result" style="display:none">
+      <div class="ai-score-main">
+        <div class="ai-score-circle"><div class="score-num" id="ai-total">—</div><div class="score-denom">/ 100</div></div>
+        <div class="ai-score-right">
+          <div class="ai-score-label">総合面談品質スコア</div>
+          <div class="ai-score-summary" id="ai-summary">—</div>
+          <span class="ai-rank-badge" id="ai-rank">—</span>
+        </div>
+      </div>
+      <div class="ai-score-grid" id="ai-axes"></div>
+      <div class="ai-feedback"><div class="ai-feedback-head">✅ 評価できる点</div><div class="ai-tag-list" id="ai-pos-tags"></div><div class="ai-feedback-body" id="ai-pos-detail"></div></div>
+      <div class="ai-feedback"><div class="ai-feedback-head">📌 改善・アドバイス</div><div class="ai-feedback-body" id="ai-advice"></div></div>
+      <div class="ai-feedback"><div class="ai-feedback-head">🎯 次回面談への推奨アクション</div><div class="ai-feedback-body" id="ai-next"></div></div>
+      <div class="ai-feedback"><div class="ai-feedback-head">📡 本社へのシグナル（マーケティング参考情報）</div><div class="ai-tag-list" id="ai-sig-tags"></div><div class="ai-feedback-body" id="ai-sig-detail"></div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="autosave-bar">
+  <div class="autosave-status"><div class="autosave-dot" id="autosave-dot"></div><span id="autosave-msg">自動保存済み</span></div>
+  <div class="bar-actions">
+    <button class="btn-draft" onclick="saveDraft()">下書き保存</button>
+    <button class="btn-ai" id="btn-ai-bottom" onclick="runAiScore()" disabled>✦ AI採点する</button>
+    <button class="btn-submit" onclick="submitForm()">送信して完了 →</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-icon" id="modal-icon">✅</div>
+    <h2 id="modal-title">送信が完了しました</h2>
+    <p id="modal-msg">CRMに活動報告を登録しました。</p>
+    <div class="modal-btns">
+      <button class="modal-close" onclick="closeModal()">閉じる</button>
+      <button class="modal-ok" onclick="newRecord()">新規入力へ →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let intentScore=0,starRating=0,recognition=null,activeBtn=null;
+
+(function init(){
+  const now=new Date(),days=['日','月','火','水','木','金','土'];
+  document.getElementById('today-date').textContent=now.getFullYear()+'年'+(now.getMonth()+1)+'月'+now.getDate()+'日（'+days[now.getDay()]+'）';
+  const pad=n=>String(n).padStart(2,'0');
+  document.getElementById('visit-dt').value=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+'T'+pad(now.getHours())+':'+pad(now.getMinutes());
+  const nd=new Date(now);nd.setDate(nd.getDate()+14);
+  document.getElementById('next-date').value=nd.getFullYear()+'-'+pad(nd.getMonth()+1)+'-'+pad(nd.getDate());
+  document.querySelectorAll('input,select,textarea').forEach(el=>{
+    el.addEventListener('input',()=>{autoSave();checkAiBtn();});
+    el.addEventListener('change',()=>{autoSave();checkAiBtn();});
+  });
+  loadDraft();checkAiBtn();
+})();
+
+function checkAiBtn(){
+  const ok=['txt-interest','txt-concern','txt-market','txt-next'].some(id=>(document.getElementById(id).value||'').trim().length>8);
+  document.getElementById('btn-ai-top').disabled=!ok;
+  document.getElementById('btn-ai-bottom').disabled=!ok;
+}
+function selectIntent(n){
+  intentScore=n;
+  document.querySelectorAll('#intent-grid .intent-cell').forEach((c,i)=>{c.className='intent-cell';if(i+1===n)c.classList.add('active-'+n);});
+}
+function toggleChip(el){el.classList.toggle('on');}
+function toggleChipSingle(el,id){document.querySelectorAll('#'+id+' .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');}
+const starLabels=['','いまひとつ','やや不満','普通','良かった','とても良かった'];
+function rateStar(n){
+  starRating=n;
+  document.querySelectorAll('#star-row .star').forEach((s,i)=>s.classList.toggle('lit',i<n));
+  document.getElementById('star-label').textContent=starLabels[n];
+}
+function startVoice(targetId,btn){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('このブラウザは音声入力に対応していません。\nChrome または Safari をご利用ください。');return;}
+  if(recognition){recognition.stop();return;}
+  recognition=new SR();recognition.lang='ja-JP';recognition.interimResults=true;recognition.continuous=false;
+  btn.classList.add('recording');activeBtn=btn;
+  const target=document.getElementById(targetId),orig=target.value;
+  recognition.onresult=e=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;e.results[i].isFinal?final+=t:interim+=t;}
+    target.value=(orig?orig+'\n':'')+(final||interim);
+  };
+  recognition.onend=()=>{btn.classList.remove('recording');recognition=null;activeBtn=null;autoSave();checkAiBtn();};
+  recognition.onerror=e=>{btn.classList.remove('recording');recognition=null;activeBtn=null;if(e.error!=='aborted')alert('音声入力エラー: '+e.error);};
+  recognition.start();
+}
+let saveTimer=null;
+function autoSave(){
+  clearTimeout(saveTimer);
+  document.getElementById('autosave-dot').style.background='var(--amber)';
+  document.getElementById('autosave-msg').textContent='保存中...';
+  saveTimer=setTimeout(()=>{
+    localStorage.setItem('mr_crm_draft',JSON.stringify(collectData()));
+    const now=new Date();
+    document.getElementById('autosave-dot').style.background='var(--green)';
+    document.getElementById('autosave-msg').textContent='自動保存済み '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+  },800);
+}
+function collectData(){
+  return {
+    hospital:document.getElementById('hospital').value,doctor:document.getElementById('doctor').value,
+    visitDt:document.getElementById('visit-dt').value,duration:document.getElementById('duration').value,
+    channel:document.getElementById('channel').value,interest:document.getElementById('txt-interest').value,
+    concern:document.getElementById('txt-concern').value,competitor:document.getElementById('txt-competitor').value,
+    market:document.getElementById('txt-market').value,intentScore,
+    intentCompare:document.querySelector('#chips-compare .on')?.textContent||'',
+    channelTags:[...document.querySelectorAll('#chips-channel .on')].map(c=>c.textContent),
+    channelReact:document.getElementById('txt-channel').value,nextGoal:document.getElementById('txt-next').value,
+    nextDate:document.getElementById('next-date').value,priority:document.getElementById('priority').value,
+    followup:document.getElementById('followup-method').value,materials:document.getElementById('txt-materials').value,
+    starRating,good:document.getElementById('txt-good').value,improve:document.getElementById('txt-improve').value,
+    feedback:document.getElementById('txt-feedback').value,savedAt:new Date().toISOString()
+  };
+}
+
+/* ===== AI SCORING（サーバー経由） ===== */
+async function runAiScore(){
+  const panel=document.getElementById('ai-panel');
+  const loading=document.getElementById('ai-loading');
+  const result=document.getElementById('ai-result');
+  panel.classList.add('show');loading.classList.add('show');result.style.display='none';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  const msgs=['活動報告を読み込み中...','医師の関心・ニーズを分析中...','面談品質スコアを計算中...','フィードバックを生成中...'];
+  let mi=0;
+  const tick=setInterval(()=>{document.getElementById('ai-loading-msg').textContent=msgs[Math.min(mi++,msgs.length-1)];},1300);
+  try{
+    const res=await fetch('/api/score',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({reportData:collectData()})
+    });
+    clearInterval(tick);
+    if(!res.ok){const e=await res.json();throw new Error(e.error||'サーバーエラーが発生しました。');}
+    const data=await res.json();
+    if(!data.success)throw new Error(data.error||'スコアリングに失敗しました。');
+    renderAiResult(data.result);
+    loading.classList.remove('show');result.style.display='block';
+    document.getElementById('ai-timestamp').textContent='採点：'+new Date().toLocaleTimeString('ja-JP');
+  }catch(err){
+    clearInterval(tick);loading.classList.remove('show');panel.classList.remove('show');
+    alert('AIスコアリングエラー:\n'+err.message);
+  }
+}
+function renderAiResult(s){
+  document.getElementById('ai-total').textContent=s.totalScore;
+  document.getElementById('ai-summary').textContent=s.summary;
+  const rb=document.getElementById('ai-rank');rb.textContent='ランク '+s.rank;rb.className='ai-rank-badge rank-'+s.rank;
+  const axesEl=document.getElementById('ai-axes');axesEl.innerHTML='';
+  (s.axes||[]).forEach(ax=>{
+    const pct=Math.round((ax.score/ax.max)*100);
+    axesEl.innerHTML+='<div class="ai-score-item"><div class="ai-item-label">'+ax.label+'</div><div class="ai-bar-wrap"><div class="ai-bar bar-'+ax.color+'" data-pct="'+pct+'"></div></div><div class="ai-item-nums"><span class="ai-item-val">'+ax.score+'</span><span class="ai-item-max">/ '+ax.max+'</span></div></div>';
+  });
+  setTimeout(()=>{document.querySelectorAll('.ai-bar').forEach(b=>{b.style.width=b.dataset.pct+'%';});},60);
+  document.getElementById('ai-pos-tags').innerHTML=(s.positives||[]).map(p=>'<span class="ai-tag pos">✓ '+p+'</span>').join('');
+  document.getElementById('ai-pos-detail').textContent=s.positiveDetail||'';
+  document.getElementById('ai-advice').textContent=s.advice||'';
+  document.getElementById('ai-next').textContent=s.nextActions||'';
+  document.getElementById('ai-sig-tags').innerHTML=(s.signals||[]).map(sg=>'<span class="ai-tag warn">📡 '+sg+'</span>').join('');
+  document.getElementById('ai-sig-detail').textContent=s.signalDetail||'';
+}
+function validate(){
+  const h=document.getElementById('hospital').value.trim(),d=document.getElementById('doctor').value.trim();
+  if(!h||!d){alert('医療機関名と医師名を入力してください。');return false;}return true;
+}
+function saveDraft(){
+  localStorage.setItem('mr_crm_draft',JSON.stringify(collectData()));
+  showModal('💾','下書きを保存しました','入力内容を一時保存しました。\nあとで続きから入力できます。',false);
+}
+function submitForm(){
+  if(!validate())return;
+  console.log('[MR CRM]',JSON.stringify(collectData(),null,2));
+  localStorage.removeItem('mr_crm_draft');
+  showModal('✅','送信が完了しました','CRMに活動報告を登録しました。\nAIスコアリング結果も保存されました。',true);
+}
+function showModal(icon,title,msg,showNew){
+  document.getElementById('modal-icon').textContent=icon;document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-msg').textContent=msg;document.getElementById('modal-overlay').classList.add('show');
+  document.querySelector('.modal-ok').style.display=showNew?'':'none';
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('show');}
+function newRecord(){
+  closeModal();
+  document.querySelectorAll('input[type=text],input[type=number],input[type=date],input[type=datetime-local],textarea,select').forEach(el=>el.value='');
+  document.querySelectorAll('.chip.on').forEach(c=>c.classList.remove('on'));
+  document.querySelectorAll('.intent-cell').forEach(c=>c.className='intent-cell');
+  document.querySelectorAll('.star').forEach(s=>s.classList.remove('lit'));
+  document.getElementById('star-label').textContent='';document.getElementById('ai-panel').classList.remove('show');
+  intentScore=0;starRating=0;window.scrollTo({top:0,behavior:'smooth'});
+  const now=new Date(),pad=n=>String(n).padStart(2,'0');
+  document.getElementById('visit-dt').value=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+'T'+pad(now.getHours())+':'+pad(now.getMinutes());
+}
+function loadDraft(){
+  const raw=localStorage.getItem('mr_crm_draft');if(!raw)return;
+  try{
+    const d=JSON.parse(raw);
+    const set=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.value=val;};
+    set('hospital',d.hospital);set('doctor',d.doctor);set('visit-dt',d.visitDt);set('duration',d.duration);set('channel',d.channel);
+    set('txt-interest',d.interest);set('txt-concern',d.concern);set('txt-competitor',d.competitor);set('txt-market',d.market);
+    set('txt-channel',d.channelReact);set('txt-next',d.nextGoal);set('next-date',d.nextDate);
+    set('priority',d.priority);set('followup-method',d.followup);set('txt-materials',d.materials);
+    set('txt-good',d.good);set('txt-improve',d.improve);set('txt-feedback',d.feedback);
+    if(d.intentScore)selectIntent(d.intentScore);if(d.starRating)rateStar(d.starRating);
+    if(d.intentCompare)document.querySelectorAll('#chips-compare .chip').forEach(c=>{if(c.textContent===d.intentCompare)c.classList.add('on');});
+    if(d.channelTags)document.querySelectorAll('#chips-channel .chip').forEach(c=>{if(d.channelTags.includes(c.textContent))c.classList.add('on');});
+  }catch(e){console.warn('下書き読み込み失敗',e);}
+}
+</script>
+</body>
+</html>
