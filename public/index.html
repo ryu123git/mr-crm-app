@@ -125,6 +125,49 @@ body{font-family:-apple-system,'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto
 .modal-btns{display:flex;gap:8px;justify-content:center}
 .modal-close{padding:8px 20px;border:1px solid var(--gray-3);background:var(--gray-0);border-radius:var(--radius);font-size:14px;cursor:pointer}
 .modal-ok{padding:8px 24px;border:none;background:var(--blue);color:#fff;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer}
+/* ===== まとめて音声入力モーダル ===== */
+.bulk-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center;padding:16px}
+.bulk-overlay.show{display:flex}
+.bulk-modal{background:var(--gray-0);border-radius:20px;width:100%;max-width:560px;box-shadow:0 8px 40px rgba(0,0,0,.22);overflow:hidden;display:flex;flex-direction:column}
+.bulk-modal-head{background:linear-gradient(135deg,#4a2fa0,#1a6fc4);padding:20px 22px;color:#fff}
+.bulk-modal-title{font-size:17px;font-weight:700;margin-bottom:4px}
+.bulk-modal-sub{font-size:12px;opacity:.85;line-height:1.5}
+.bulk-modal-body{padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+.bulk-transcript-box{min-height:120px;padding:12px 14px;border:2px dashed var(--gray-3);border-radius:12px;background:var(--gray-1);font-size:14px;color:var(--gray-7);line-height:1.65;white-space:pre-wrap;transition:border-color .2s}
+.bulk-transcript-box.has-text{border-color:var(--blue);background:var(--blue-lt)}
+.bulk-transcript-box.recording{border-color:var(--red);background:#fff5f5}
+.bulk-transcript-placeholder{color:var(--gray-4);font-size:13px;pointer-events:none}
+.bulk-mic-row{display:flex;justify-content:center;gap:10px}
+.bulk-mic-btn{width:72px;height:72px;border-radius:50%;border:none;background:var(--blue);color:#fff;font-size:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(26,111,196,.35);transition:all .2s}
+.bulk-mic-btn:hover{background:var(--blue-dk);transform:scale(1.05)}
+.bulk-mic-btn.recording{background:var(--red);box-shadow:0 4px 20px rgba(196,43,43,.45);animation:pulse 1s ease-in-out infinite}
+.bulk-hint{text-align:center;font-size:12px;color:var(--gray-5);line-height:1.6}
+.bulk-example{background:var(--gray-1);border-radius:8px;border:1px solid var(--gray-3);padding:10px 12px;font-size:12px;color:var(--gray-5);line-height:1.7}
+.bulk-example strong{color:var(--gray-6)}
+/* AI仕分け結果 */
+.bulk-result{display:none;flex-direction:column;gap:10px}
+.bulk-result.show{display:flex}
+.bulk-result-msg{padding:12px 14px;background:var(--green-lt);border:1px solid #9FE1CB;border-radius:10px;font-size:13px;color:#0d5a38;line-height:1.65}
+.bulk-missing{padding:10px 14px;background:var(--amber-lt);border:1px solid #FAC775;border-radius:10px;font-size:13px;color:#5a3a00}
+.bulk-missing-title{font-weight:700;margin-bottom:6px}
+.bulk-missing-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.bulk-missing-tag{font-size:12px;padding:3px 10px;border-radius:20px;background:#fff;border:1px solid #FAC775;color:#7a4a00}
+.bulk-preview{background:var(--gray-1);border-radius:10px;border:1px solid var(--gray-3);padding:12px 14px;font-size:12px;color:var(--gray-6);line-height:1.8;max-height:200px;overflow-y:auto}
+.bulk-preview-row{display:flex;gap:8px;border-bottom:1px solid var(--gray-2);padding:3px 0}
+.bulk-preview-row:last-child{border-bottom:none}
+.bulk-preview-label{flex-shrink:0;width:110px;color:var(--gray-5);font-weight:600}
+.bulk-preview-val{color:var(--gray-7)}
+/* ローディング */
+.bulk-parsing{display:none;flex-direction:column;align-items:center;gap:10px;padding:20px}
+.bulk-parsing.show{display:flex}
+.bulk-modal-foot{padding:14px 22px;border-top:1px solid var(--gray-3);display:flex;gap:8px;justify-content:flex-end;background:var(--gray-1)}
+.btn-bulk-open{padding:7px 16px;border:2px solid var(--green);background:var(--green-lt);color:var(--green);border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+.btn-bulk-open:hover{background:var(--green);color:#fff}
+.btn-cancel{padding:7px 14px;border:1px solid var(--gray-3);background:var(--gray-0);border-radius:var(--radius);font-size:13px;cursor:pointer}
+.btn-parse{padding:7px 18px;border:none;background:var(--purple);color:#fff;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.btn-parse:disabled{background:var(--gray-4);cursor:not-allowed}
+.btn-apply{padding:7px 18px;border:none;background:var(--green);color:#fff;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer}
+
 @media(max-width:560px){
   .row-2{grid-template-columns:1fr}
   .row-3{grid-template-columns:1fr 1fr}
@@ -146,6 +189,7 @@ body{font-family:-apple-system,'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto
   </div>
   <div class="app-header-right">
     <button class="btn-draft" onclick="saveDraft()">下書き保存</button>
+    <button class="btn-bulk-open" onclick="openBulk()">🎙️ まとめて入力</button>
     <button class="btn-ai" id="btn-ai-top" onclick="runAiScore()" disabled>✦ AI採点する</button>
     <button class="btn-submit" onclick="submitForm()">送信して完了 →</button>
   </div>
@@ -297,8 +341,59 @@ body{font-family:-apple-system,'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto
   <div class="autosave-status"><div class="autosave-dot" id="autosave-dot"></div><span id="autosave-msg">自動保存済み</span></div>
   <div class="bar-actions">
     <button class="btn-draft" onclick="saveDraft()">下書き保存</button>
+    <button class="btn-bulk-open" onclick="openBulk()">🎙️ まとめて入力</button>
     <button class="btn-ai" id="btn-ai-bottom" onclick="runAiScore()" disabled>✦ AI採点する</button>
     <button class="btn-submit" onclick="submitForm()">送信して完了 →</button>
+  </div>
+</div>
+
+<!-- ===== まとめて音声入力モーダル ===== -->
+<div class="bulk-overlay" id="bulk-overlay">
+  <div class="bulk-modal">
+    <div class="bulk-modal-head">
+      <div class="bulk-modal-title">🎙️ まとめて音声入力</div>
+      <div class="bulk-modal-sub">面談のことを自由に話してください。AIが自動で各項目に仕分けします。</div>
+    </div>
+    <div class="bulk-modal-body">
+
+      <!-- 入力前：録音UI -->
+      <div id="bulk-input-area">
+        <div class="bulk-example">
+          <strong>話し方の例：</strong><br>
+          「今日は○○病院の山田先生と15分対面で面談しました。先生は心不全患者への新薬の用量調整にとても関心があって、副作用プロファイルを詳しく聞かれました。次回はエビデンスデータを持参して比較説明をする予定です。処方意向は4くらいで、前回より上がった印象です。」
+        </div>
+        <div id="bulk-transcript" class="bulk-transcript-box">
+          <span class="bulk-transcript-placeholder" id="bulk-placeholder">マイクボタンを押して話し始めてください…</span>
+        </div>
+        <div class="bulk-mic-row">
+          <button class="bulk-mic-btn" id="bulk-mic-btn" onclick="toggleBulkVoice()">🎤</button>
+        </div>
+        <div class="bulk-hint" id="bulk-hint">タップして録音開始 → もう一度タップで停止</div>
+      </div>
+
+      <!-- AI解析ローディング -->
+      <div class="bulk-parsing" id="bulk-parsing">
+        <div class="ai-spinner"></div>
+        <div style="font-size:13px;color:var(--gray-5)">AIが内容を仕分け中...</div>
+      </div>
+
+      <!-- 仕分け結果 -->
+      <div class="bulk-result" id="bulk-result">
+        <div class="bulk-result-msg" id="bulk-confirm-msg"></div>
+        <div class="bulk-missing" id="bulk-missing-area" style="display:none">
+          <div class="bulk-missing-title">📋 以下の項目が未入力です：</div>
+          <div class="bulk-missing-tags" id="bulk-missing-tags"></div>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:var(--gray-5);margin-bottom:-6px">仕分け結果プレビュー</div>
+        <div class="bulk-preview" id="bulk-preview"></div>
+      </div>
+
+    </div>
+    <div class="bulk-modal-foot">
+      <button class="btn-cancel" onclick="closeBulk()">キャンセル</button>
+      <button class="btn-parse" id="btn-parse" onclick="runParse()" disabled>✦ AIで仕分けする</button>
+      <button class="btn-apply" id="btn-apply" onclick="applyToForm()" style="display:none">フォームに反映する →</button>
+    </div>
   </div>
 </div>
 
@@ -469,6 +564,141 @@ function newRecord(){
   const now=new Date(),pad=n=>String(n).padStart(2,'0');
   document.getElementById('visit-dt').value=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+'T'+pad(now.getHours())+':'+pad(now.getMinutes());
 }
+/* ===== まとめて音声入力 ===== */
+let bulkRecognition=null, bulkTranscript='', parsedResult=null;
+
+function openBulk(){
+  document.getElementById('bulk-overlay').classList.add('show');
+  bulkTranscript=''; parsedResult=null;
+  resetBulkUI();
+}
+function closeBulk(){
+  document.getElementById('bulk-overlay').classList.remove('show');
+  if(bulkRecognition){ bulkRecognition.stop(); bulkRecognition=null; }
+}
+function resetBulkUI(){
+  const tb=document.getElementById('bulk-transcript');
+  tb.innerHTML='<span class="bulk-transcript-placeholder" id="bulk-placeholder">マイクボタンを押して話し始めてください…</span>';
+  tb.className='bulk-transcript-box';
+  document.getElementById('bulk-mic-btn').className='bulk-mic-btn';
+  document.getElementById('bulk-mic-btn').textContent='🎤';
+  document.getElementById('bulk-hint').textContent='タップして録音開始 → もう一度タップで停止';
+  document.getElementById('btn-parse').disabled=true;
+  document.getElementById('btn-apply').style.display='none';
+  document.getElementById('bulk-parsing').classList.remove('show');
+  document.getElementById('bulk-result').classList.remove('show');
+  document.getElementById('bulk-input-area').style.display='';
+}
+
+function toggleBulkVoice(){
+  if(bulkRecognition){ bulkRecognition.stop(); return; }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ alert('このブラウザは音声入力に対応していません。\nChrome または Safari をご利用ください。'); return; }
+  bulkRecognition=new SR();
+  bulkRecognition.lang='ja-JP'; bulkRecognition.interimResults=true; bulkRecognition.continuous=true;
+  const btn=document.getElementById('bulk-mic-btn');
+  const tb=document.getElementById('bulk-transcript');
+  btn.classList.add('recording'); btn.textContent='⏹️';
+  document.getElementById('bulk-hint').textContent='録音中... もう一度タップで停止';
+  tb.className='bulk-transcript-box recording';
+  let finalText=bulkTranscript;
+  bulkRecognition.onresult=e=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      e.results[i].isFinal?final+=t:interim+=t;
+    }
+    if(final) finalText+=final;
+    tb.textContent=finalText+(interim?'…'+interim:'');
+    if(tb.textContent.trim()){ document.getElementById('btn-parse').disabled=false; }
+  };
+  bulkRecognition.onend=()=>{
+    bulkTranscript=finalText||tb.textContent;
+    btn.classList.remove('recording'); btn.textContent='🎤';
+    document.getElementById('bulk-hint').textContent='録音完了。「AIで仕分けする」を押してください。';
+    tb.className=bulkTranscript.trim()?'bulk-transcript-box has-text':'bulk-transcript-box';
+    if(bulkTranscript.trim()) document.getElementById('btn-parse').disabled=false;
+    bulkRecognition=null;
+  };
+  bulkRecognition.onerror=e=>{ btn.classList.remove('recording'); btn.textContent='🎤'; bulkRecognition=null; if(e.error!=='aborted') alert('音声入力エラー: '+e.error); };
+  bulkRecognition.start();
+}
+
+async function runParse(){
+  const text=(document.getElementById('bulk-transcript').textContent||'').trim();
+  if(!text){ alert('音声を録音してから仕分けしてください。'); return; }
+  document.getElementById('bulk-input-area').style.display='none';
+  document.getElementById('bulk-parsing').classList.add('show');
+  document.getElementById('bulk-result').classList.remove('show');
+  document.getElementById('btn-parse').disabled=true;
+  document.getElementById('btn-apply').style.display='none';
+  try{
+    const res=await fetch('/api/parse',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({transcript:text})
+    });
+    if(!res.ok){ const e=await res.json(); throw new Error(e.error||'サーバーエラー'); }
+    const data=await res.json();
+    if(!data.success) throw new Error(data.error||'仕分けに失敗しました。');
+    parsedResult=data.result;
+    showParseResult(parsedResult);
+  }catch(err){
+    document.getElementById('bulk-parsing').classList.remove('show');
+    document.getElementById('bulk-input-area').style.display='';
+    document.getElementById('btn-parse').disabled=false;
+    alert('仕分けエラー:\n'+err.message);
+  }
+}
+
+function showParseResult(r){
+  document.getElementById('bulk-parsing').classList.remove('show');
+  document.getElementById('bulk-result').classList.add('show');
+  // 確認メッセージ
+  document.getElementById('bulk-confirm-msg').textContent='✅ '+r.confirmMessage;
+  // 不足項目
+  const missingArea=document.getElementById('bulk-missing-area');
+  const missingTags=document.getElementById('bulk-missing-tags');
+  if(r.missingFields&&r.missingFields.length>0){
+    missingArea.style.display='';
+    missingTags.innerHTML=r.missingFields.map(f=>'<span class="bulk-missing-tag">'+f+'</span>').join('');
+  } else {
+    missingArea.style.display='none';
+  }
+  // プレビュー
+  const labels={hospital:'医療機関名',doctor:'面談医師',duration:'面談時間',channel:'面談形式',interest:'医師の関心・反応',concern:'質問・懸念事項',competitor:'競合品の言及',market:'市場・患者情報',nextGoal:'次回訪問の目的',materials:'提供予定資料',priority:'優先度',good:'うまくいった点',improve:'改善点',feedback:'本社フィードバック',intentScore:'処方意向スコア'};
+  let previewHTML='';
+  Object.keys(labels).forEach(k=>{
+    const v=r[k];
+    if(v&&String(v).trim()&&v!=='0'){
+      previewHTML+='<div class="bulk-preview-row"><span class="bulk-preview-label">'+labels[k]+'</span><span class="bulk-preview-val">'+v+'</span></div>';
+    }
+  });
+  document.getElementById('bulk-preview').innerHTML=previewHTML||'<span style="color:var(--gray-4)">（読み取れた項目がありません）</span>';
+  document.getElementById('btn-apply').style.display='';
+}
+
+function applyToForm(){
+  if(!parsedResult) return;
+  const r=parsedResult;
+  const set=(id,val)=>{ const el=document.getElementById(id); if(el&&val&&String(val).trim()) el.value=val; };
+  set('hospital',r.hospital); set('doctor',r.doctor);
+  set('duration',r.duration); set('channel',r.channel);
+  set('txt-interest',r.interest); set('txt-concern',r.concern);
+  set('txt-competitor',r.competitor); set('txt-market',r.market);
+  set('txt-next',r.nextGoal); set('txt-materials',r.materials);
+  set('priority',r.priority); set('txt-good',r.good);
+  set('txt-improve',r.improve); set('txt-feedback',r.feedback);
+  if(r.intentScore&&parseInt(r.intentScore)>0) selectIntent(parseInt(r.intentScore));
+  autoSave(); checkAiBtn();
+  closeBulk();
+  // 適用完了トースト
+  const dot=document.getElementById('autosave-dot');
+  const msg=document.getElementById('autosave-msg');
+  dot.style.background='var(--green)';
+  msg.textContent='✅ 音声内容をフォームに反映しました';
+  setTimeout(()=>{ msg.textContent='自動保存済み'; },3000);
+}
+
 function loadDraft(){
   const raw=localStorage.getItem('mr_crm_draft');if(!raw)return;
   try{
